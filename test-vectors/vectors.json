@@ -1,0 +1,214 @@
+{
+  "description": "Reference OpenAuspex vectors: a Canary Definition (kind 32772) and a 3-period attestation chain (kind 1772) anchored to real mainnet blocks.",
+  "note": "secretKeyHex is TEST ONLY. `blocks` are real mainnet blocks — build an offline provider from them to verify the anchors. Any `otsPending` proofs are pending until Bitcoin-confirmed.",
+  "secretKeyHex": "0707070707070707070707070707070707070707070707070707070707070707",
+  "pubkey": "989c0b76cb563971fdc9bef31ec06c3560f3249d6ee9e5d83c57625596e05f6f",
+  "now": 1718898758,
+  "expected": {
+    "state": "alive",
+    "threshold": 1,
+    "freshSigners": 1
+  },
+  "blocks": [
+    {
+      "height": 840000,
+      "hash": "0000000000000000000320283a032748cef8227873ff4872689bf23f1cda83a5",
+      "timestamp": 1713571767
+    },
+    {
+      "height": 844320,
+      "hash": "00000000000000000000526af018e2b8646fb519b96d8d7f3c076091926e067c",
+      "timestamp": 1716222832
+    },
+    {
+      "height": 848640,
+      "hash": "0000000000000000000252677e23c957491be8a6590497e5bd0b330a15236064",
+      "timestamp": 1718812358
+    }
+  ],
+  "definition": {
+    "kind": 32772,
+    "created_at": 1713571167,
+    "content": "Reference warrant canary test vector. Absence or clause-drop is the message.",
+    "tags": [
+      [
+        "d",
+        "primary"
+      ],
+      [
+        "title",
+        "Reference — Primary Canary"
+      ],
+      [
+        "cadence",
+        "2592000"
+      ],
+      [
+        "grace",
+        "604800"
+      ],
+      [
+        "freshness",
+        "bitcoin",
+        "6"
+      ],
+      [
+        "freshness",
+        "ots"
+      ],
+      [
+        "statement",
+        "no-secret-order",
+        "We have not received any secret government order, NSL, or gag-bound process."
+      ],
+      [
+        "statement",
+        "no-backdoor",
+        "We have not installed any backdoor or weakened encryption at government request."
+      ],
+      [
+        "statement",
+        "keys-undisclosed",
+        "We have not disclosed private keys or auth material to any third party."
+      ]
+    ],
+    "pubkey": "989c0b76cb563971fdc9bef31ec06c3560f3249d6ee9e5d83c57625596e05f6f",
+    "id": "d8f47f88248fa9dcbd623657c51c6997117d94f4e674c4e45aeaaeb6d8bda13e",
+    "sig": "d9229f62041ddb9c13ad169dd6e71430ada50535d8d7fbcb4f6ce0c65bddb25601f2e6e48e41b58a2411512b8c9bc7043e713d48810c1e3f2bbb9252dbbde131"
+  },
+  "attestations": [
+    {
+      "kind": 1772,
+      "created_at": 1713571827,
+      "content": "",
+      "tags": [
+        [
+          "a",
+          "32772:989c0b76cb563971fdc9bef31ec06c3560f3249d6ee9e5d83c57625596e05f6f:primary"
+        ],
+        [
+          "canary",
+          "primary"
+        ],
+        [
+          "status",
+          "alive"
+        ],
+        [
+          "affirm",
+          "no-secret-order"
+        ],
+        [
+          "affirm",
+          "no-backdoor"
+        ],
+        [
+          "affirm",
+          "keys-undisclosed"
+        ],
+        [
+          "freshness",
+          "bitcoin",
+          "840000",
+          "0000000000000000000320283a032748cef8227873ff4872689bf23f1cda83a5"
+        ],
+        [
+          "alt",
+          "Warrant canary attestation — all clauses affirmed."
+        ]
+      ],
+      "pubkey": "989c0b76cb563971fdc9bef31ec06c3560f3249d6ee9e5d83c57625596e05f6f",
+      "id": "35988be305da7461fd0d47ff4aa4297748174a6a884636b04373ab9833349f59",
+      "sig": "b609843668c6b3abe17fd848ca8215d49d65f827fc496dbe1fcf27b3ea85c2de44f69142300a1702b8a5666e48f69daa4523257917bf5d4978d2058eb6ace09f"
+    },
+    {
+      "kind": 1772,
+      "created_at": 1716222892,
+      "content": "",
+      "tags": [
+        [
+          "a",
+          "32772:989c0b76cb563971fdc9bef31ec06c3560f3249d6ee9e5d83c57625596e05f6f:primary"
+        ],
+        [
+          "canary",
+          "primary"
+        ],
+        [
+          "status",
+          "alive"
+        ],
+        [
+          "affirm",
+          "no-secret-order"
+        ],
+        [
+          "affirm",
+          "no-backdoor"
+        ],
+        [
+          "affirm",
+          "keys-undisclosed"
+        ],
+        [
+          "freshness",
+          "bitcoin",
+          "844320",
+          "00000000000000000000526af018e2b8646fb519b96d8d7f3c076091926e067c"
+        ],
+        [
+          "alt",
+          "Warrant canary attestation — all clauses affirmed."
+        ]
+      ],
+      "pubkey": "989c0b76cb563971fdc9bef31ec06c3560f3249d6ee9e5d83c57625596e05f6f",
+      "id": "961298499739fac53cf0909dc01cb72d4d868b51fc9d28ad3468d87afc946793",
+      "sig": "8c84f99eb612a4405bde5f735e446d29a69b8febc9865aab87b56abc81d87db9629f024a64dfffbb1f37365180f0189fc3f0a16e2dabca16ad866034c21c66ea"
+    },
+    {
+      "kind": 1772,
+      "created_at": 1718812418,
+      "content": "",
+      "tags": [
+        [
+          "a",
+          "32772:989c0b76cb563971fdc9bef31ec06c3560f3249d6ee9e5d83c57625596e05f6f:primary"
+        ],
+        [
+          "canary",
+          "primary"
+        ],
+        [
+          "status",
+          "alive"
+        ],
+        [
+          "affirm",
+          "no-secret-order"
+        ],
+        [
+          "affirm",
+          "no-backdoor"
+        ],
+        [
+          "affirm",
+          "keys-undisclosed"
+        ],
+        [
+          "freshness",
+          "bitcoin",
+          "848640",
+          "0000000000000000000252677e23c957491be8a6590497e5bd0b330a15236064"
+        ],
+        [
+          "alt",
+          "Warrant canary attestation — all clauses affirmed."
+        ]
+      ],
+      "pubkey": "989c0b76cb563971fdc9bef31ec06c3560f3249d6ee9e5d83c57625596e05f6f",
+      "id": "7361f927d97326b3035581ef896a29a2d9b48c758c878c5ede8408a6ee11f811",
+      "sig": "867dc523538faa663fd3114eb95b6ae0265ab4a3c1dd1848e1052831d079ce00cd9469e1beba5c649d38fd34c3cae7c738e3ad821b6388c9af833ec60066b4c1"
+    }
+  ],
+  "otsPending": []
+}

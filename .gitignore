@@ -1,0 +1,11 @@
+node_modules/
+dist/
+coverage/
+*.log
+.DS_Store
+
+# local runtime artifacts (operator config + pending OTS store)
+canary.config.json
+.warrant-canary/
+.openauspex/
+proof.ots

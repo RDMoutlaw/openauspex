@@ -1,0 +1,26 @@
+{
+  "relays": [
+    "wss://relay.damus.io",
+    "wss://nos.lol"
+  ],
+  "canaryId": "primary",
+  "storePath": ".openauspex/pending.json",
+  "bitcoin": {
+    "explorers": [
+      "https://mempool.space/api",
+      "https://blockstream.info/api"
+    ]
+  },
+  "definition": {
+    "title": "Example — Primary Canary",
+    "content": "Example warrant canary. Absence or clause-drop is the message.",
+    "cadence": 2592000,
+    "grace": 604800,
+    "freshness": { "bitcoin": { "maxBlockAge": 6 }, "ots": true },
+    "statements": [
+      { "id": "no-secret-order", "text": "We have not received any secret government order, NSL, or gag-bound process." },
+      { "id": "no-backdoor", "text": "We have not installed any backdoor or weakened encryption at government request." },
+      { "id": "keys-undisclosed", "text": "We have not disclosed private keys or auth material to any third party." }
+    ]
+  }
+}
