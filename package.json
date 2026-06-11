@@ -1,6 +1,6 @@
 {
   "name": "openauspex",
-  "version": "0.0.0",
+  "version": "0.1.1",
   "private": true,
   "type": "module",
   "description": "A warrant canary system for Nostr, with Bitcoin block-hash anchoring and OpenTimestamps for freshness.",

@@ -1,27 +1,39 @@
 {
   "name": "@openauspex/cli",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "description": "OpenAuspex command-line interface.",
   "license": "MIT",
-  "keywords": ["nostr", "warrant-canary", "bitcoin", "opentimestamps", "cli"],
+  "keywords": [
+    "nostr",
+    "warrant-canary",
+    "bitcoin",
+    "opentimestamps",
+    "cli"
+  ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/openauspex/openauspex.git",
+    "url": "git+https://github.com/RDMoutlaw/openauspex.git",
     "directory": "packages/cli"
   },
-  "homepage": "https://github.com/openauspex/openauspex#readme",
-  "bugs": "https://github.com/openauspex/openauspex/issues",
-  "engines": { "node": ">=20" },
+  "homepage": "https://github.com/RDMoutlaw/openauspex#readme",
+  "bugs": "https://github.com/RDMoutlaw/openauspex/issues",
+  "engines": {
+    "node": ">=20"
+  },
   "main": "./dist/index.js",
   "bin": {
     "auspex": "./dist/index.js"
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json"
   },
-  "publishConfig": { "access": "public" },
+  "publishConfig": {
+    "access": "public"
+  },
   "dependencies": {
     "@openauspex/core": "^0.1.0",
     "@openauspex/monitor": "^0.1.0",

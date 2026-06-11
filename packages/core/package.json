@@ -1,18 +1,26 @@
 {
   "name": "@openauspex/core",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "description": "Core library for OpenAuspex: event modelling, validation, Bitcoin freshness, OpenTimestamps, and evaluation.",
   "license": "MIT",
-  "keywords": ["nostr", "warrant-canary", "bitcoin", "opentimestamps", "freshness"],
+  "keywords": [
+    "nostr",
+    "warrant-canary",
+    "bitcoin",
+    "opentimestamps",
+    "freshness"
+  ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/openauspex/openauspex.git",
+    "url": "git+https://github.com/RDMoutlaw/openauspex.git",
     "directory": "packages/core"
   },
-  "homepage": "https://github.com/openauspex/openauspex#readme",
-  "bugs": "https://github.com/openauspex/openauspex/issues",
-  "engines": { "node": ">=20" },
+  "homepage": "https://github.com/RDMoutlaw/openauspex#readme",
+  "bugs": "https://github.com/RDMoutlaw/openauspex/issues",
+  "engines": {
+    "node": ">=20"
+  },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
@@ -22,11 +30,16 @@
       "default": "./dist/index.js"
     }
   },
-  "files": ["dist", "src"],
+  "files": [
+    "dist",
+    "src"
+  ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json"
   },
-  "publishConfig": { "access": "public" },
+  "publishConfig": {
+    "access": "public"
+  },
   "dependencies": {
     "nostr-tools": "^2.7.0",
     "opentimestamps": "^0.4.9"
