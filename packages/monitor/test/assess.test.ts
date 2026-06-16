@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { finalizeEvent, generateSecretKey, getPublicKey } from 'nostr-tools/pure';
-import { buildAttestation, buildDefinition } from '@openauspex/core';
-import type { BitcoinProvider, BlockInfo, NostrEvent } from '@openauspex/core';
+import { buildAttestation, buildDefinition, buildOtsAttestation } from '@openauspex/core';
+import type { BitcoinProvider, BlockInfo, NostrEvent, OtsVerification } from '@openauspex/core';
 
 import { assess } from '../src/assess';
 
@@ -79,5 +79,35 @@ describe('assess', () => {
     const a2 = attestation(sk, pk, ['no-secret-order'], 850100);
     const report = await assess(defEvent, [a1, a2], { provider: new ChainProvider(), now: BASE_TS + 31 * 86400 });
     expect(report.evaluation.alarms.some((x) => x.kind === 'clause-drop' && x.clause === 'no-backdoor')).toBe(true);
+  });
+
+  it('threads the verified OTS upper bound through and flags a back-dated attestation', async () => {
+    const sk = generateSecretKey();
+    const pk = getPublicKey(sk);
+    const defEvent = finalizeEvent(
+      buildDefinition({
+        id: 'primary',
+        content: 'c',
+        cadence: 30 * 86400,
+        grace: 7 * 86400,
+        freshness: { bitcoin: { maxBlockAge: 6 }, ots: true },
+        statements: [{ id: 'no-secret-order', text: 'a' }],
+      }),
+      sk,
+    );
+    const att = attestation(sk, pk, ['no-secret-order'], 850000); // anchorTime = BASE_TS
+    const otsEvent = finalizeEvent(
+      buildOtsAttestation({ eventId: att.id, eventKind: att.kind, proof: new Uint8Array([1, 2, 3]) }),
+      sk,
+    );
+    // Fake verifier: a complete proof committing the event 30 days after its anchor block.
+    const verifyOts = async (): Promise<OtsVerification> => ({ complete: true, bitcoinTime: BASE_TS + 30 * 86400 });
+    const report = await assess(defEvent, [att], {
+      provider: new ChainProvider(),
+      now: BASE_TS + 31 * 86400,
+      otsEvents: [otsEvent],
+      verifyOts,
+    });
+    expect(report.evaluation.alarms.some((x) => x.kind === 'back-dated')).toBe(true);
   });
 });

@@ -92,13 +92,16 @@ export async function assess(
       });
     }
 
+    let otsTime: number | undefined;
     if (definition.freshness.ots && opts.verifyOts) {
       const proof = otsByTarget.get(event.id);
       if (!proof) {
         collected.push({ code: 'ots-missing', message: 'no OpenTimestamps proof seen yet', severity: 'warn' });
       } else {
         const verified = await opts.verifyOts(proof, event.id);
-        if (!verified.complete) {
+        if (verified.complete && verified.bitcoinTime !== undefined) {
+          otsTime = verified.bitcoinTime; // trusted upper bound on signing time (not-later-than)
+        } else {
           collected.push({ code: 'ots-incomplete', message: 'OTS proof not yet Bitcoin-confirmed', severity: 'warn' });
         }
       }
@@ -110,6 +113,7 @@ export async function assess(
       status: att.status,
       affirms: att.affirms,
       anchorTime,
+      otsTime,
       valid,
     });
     if (collected.some((i) => i.severity === 'error')) {

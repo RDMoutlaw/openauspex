@@ -110,6 +110,41 @@ describe('evaluate', () => {
   });
 });
 
+describe('back-dating (OTS upper bound)', () => {
+  it('raises no alarm when the OTS commit is within tolerance of the anchor', () => {
+    const a = att({ anchorTime: 1_000_000, otsTime: 1_000_000 + 3600 }); // stamped ~1h after anchor
+    const res = evaluate(definition(), [a], { now: 1_000_000 + 10 * DAY });
+    expect(res.alarms.some((x) => x.kind === 'back-dated')).toBe(false);
+  });
+
+  it('flags an attestation anchored long before its OTS commit (a back-filled period)', () => {
+    const a = att({ eventId: 'b'.repeat(64), anchorTime: 1_000_000, otsTime: 1_000_000 + 30 * DAY });
+    const res = evaluate(definition(), [a], { now: 1_000_000 + 31 * DAY });
+    expect(res.state).toBe('alive'); // anchor still within cadence+grace — liveness is unaffected
+    const flag = res.alarms.find((x) => x.kind === 'back-dated');
+    expect(flag?.eventId).toBe('b'.repeat(64));
+    expect(flag?.signer).toBe('a'.repeat(64));
+  });
+
+  it('flags an OTS commit that precedes the anchor block (inconsistent bounds)', () => {
+    const a = att({ anchorTime: 1_000_000, otsTime: 1_000_000 - 5 * DAY });
+    const res = evaluate(definition(), [a], { now: 1_000_000 + 10 * DAY });
+    expect(res.alarms.some((x) => x.kind === 'back-dated')).toBe(true);
+  });
+
+  it('does not check when OTS is still pending (no upper bound yet)', () => {
+    const a = att({ anchorTime: 1_000_000 }); // otsTime undefined
+    const res = evaluate(definition(), [a], { now: 1_000_000 + 10 * DAY });
+    expect(res.alarms.some((x) => x.kind === 'back-dated')).toBe(false);
+  });
+
+  it('respects a custom maxOtsStraddle', () => {
+    const a = att({ anchorTime: 1_000_000, otsTime: 1_000_000 + 2 * 3600 }); // 2h straddle
+    const res = evaluate(definition(), [a], { now: 1_000_000 + 10 * DAY, maxOtsStraddle: 3600 });
+    expect(res.alarms.some((x) => x.kind === 'back-dated')).toBe(true); // 2h > 1h tolerance
+  });
+});
+
 describe('diffDefinitions', () => {
   it('flags loosened cadence, widened freshness, dropped OTS, and removed clauses', () => {
     const prev = definition();

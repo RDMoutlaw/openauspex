@@ -37,6 +37,7 @@ export class MempoolProvider implements BitcoinProvider {
       id?: unknown;
       height?: unknown;
       timestamp?: unknown;
+      merkle_root?: unknown;
     };
     if (
       typeof data.id !== 'string' ||
@@ -45,7 +46,12 @@ export class MempoolProvider implements BitcoinProvider {
     ) {
       throw new Error(`malformed block response for ${hash}`);
     }
-    return { height: data.height, hash: data.id, timestamp: data.timestamp };
+    return {
+      height: data.height,
+      hash: data.id,
+      timestamp: data.timestamp,
+      merkleRoot: typeof data.merkle_root === 'string' ? data.merkle_root : undefined,
+    };
   }
 
   async getTipHeight(): Promise<number> {

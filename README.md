@@ -10,10 +10,13 @@ government order"* — whose **absence** carries the message. An operator served
 can't legally say so; instead they stop renewing the statement, and watchers infer what the silence
 means.
 
-The difficult property is **freshness**: proving each statement was produced *recently and under the
-operator's own control*. Without it, an adversary who seizes the signing key — or compels the operator
-just once — could keep the canary "alive" indefinitely with statements signed in advance. This project
-makes that impossible by anchoring every statement to the Bitcoin blockchain.
+The difficult property is **freshness**: proving each statement was produced *recently, by a live
+key-holder* — not pre-computed and released on a schedule. Anchoring every statement to a recent
+Bitcoin block makes pre-signing impossible: next period's block hash is unknowable today, so an
+adversary cannot fabricate future statements in advance. This turns a one-time key theft, or a single
+coerced signing, into the need for *continuous* live access — but it does not, and cannot, defeat an
+adversary who retains the key or who compels the operator to keep signing truthfully under duress (see
+[SECURITY.md](./SECURITY.md)). Freshness proves recency of signing, not that the signer was free.
 
 It ships a TypeScript library and an `auspex` CLI to **publish**, **archive**, and **monitor**
 canaries.
@@ -64,9 +67,10 @@ own timestamp as the trusted clock. The author-controlled Nostr timestamp is nev
 
 [OpenTimestamps](https://opentimestamps.org) timestamps a hash into the Bitcoin chain through public
 calendar servers, which batch many hashes into a single transaction. After an attestation is published,
-its event id is timestamped, committing it into a *later* block. That makes back-dating impossible: an
-operator cannot retroactively claim a statement predates a gap. The proof is carried as a companion
-event (NIP-03).
+its event id is timestamped, committing it into a *later* block — an upper bound on when it was created.
+A monitor compares that bound against the attestation's Bitcoin anchor (the lower bound) and raises a
+**BACK-DATED** alarm when the two straddle too wide a gap, exposing a period back-filled long after the
+fact and passed off as old. The proof is carried as a companion event (NIP-03).
 
 ### The two bounds together
 

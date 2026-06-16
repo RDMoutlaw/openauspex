@@ -31,7 +31,13 @@ export class MultiProvider implements BitcoinProvider {
 
   async getBlock(hash: string): Promise<BlockInfo> {
     const results = await this.collect((p) => p.getBlock(hash));
-    return this.agree(results, (b) => `${b.height}:${b.timestamp}:${b.hash}`, `block ${hash}`);
+    // Include merkleRoot so a single explorer cannot slip a forged root past the quorum — OTS
+    // verification (`verifyOtsBitcoin`) trusts the agreed-upon root.
+    return this.agree(
+      results,
+      (b) => `${b.height}:${b.timestamp}:${b.hash}:${b.merkleRoot ?? ''}`,
+      `block ${hash}`,
+    );
   }
 
   async getTipHeight(): Promise<number> {

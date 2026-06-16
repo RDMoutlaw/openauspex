@@ -4,6 +4,12 @@ export interface BlockInfo {
   hash: string;
   /** Block header timestamp, unix seconds. The trusted clock for canary timing. */
   timestamp: number;
+  /**
+   * Block header Merkle root, big-endian display hex. Optional — populated by Esplora providers and
+   * required only for OpenTimestamps verification (`verifyOtsBitcoin`); freshness/anchoring do not
+   * use it.
+   */
+  merkleRoot?: string;
 }
 
 /**

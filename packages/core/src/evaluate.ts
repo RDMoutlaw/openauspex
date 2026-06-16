@@ -3,7 +3,19 @@ import type { CanaryDefinition, CanaryStatus } from './types.js';
 /** The derived state of a canary as seen by a monitor. */
 export type CanaryState = 'alive' | 'dead' | 'retired' | 'terminated' | 'unknown';
 
-export type AlarmKind = 'dead' | 'clause-drop' | 'definition-drift';
+export type AlarmKind = 'dead' | 'clause-drop' | 'definition-drift' | 'back-dated';
+
+/**
+ * Default maximum gap between an attestation's lower bound (its anchor block time) and its upper
+ * bound (its OpenTimestamps commit time) before it is treated as back-dated. A genuine attestation
+ * anchors a recent block and is stamped immediately, so the two bounds sit only an OTS confirmation
+ * apart (~hours); 24h leaves generous slack for slow confirmation without admitting a back-filled
+ * period.
+ */
+export const DEFAULT_MAX_OTS_STRADDLE = 86_400;
+
+/** Allowance for Bitcoin's ~2h block-timestamp tolerance when comparing the two bounds. */
+const TIMESTAMP_SLOP = 7_200;
 
 export interface Alarm {
   kind: AlarmKind;
@@ -28,6 +40,13 @@ export interface EvaluatedAttestation {
   affirms: string[];
   /** Trusted signing-time lower bound: the anchor block's header timestamp (unix seconds). */
   anchorTime: number;
+  /**
+   * Trusted signing-time UPPER bound: the Bitcoin block time committing this event id via a complete
+   * NIP-03 OpenTimestamps proof (unix seconds). Present only once a complete proof has been verified;
+   * `undefined` while OTS is still pending. With {@link anchorTime} it brackets the true signing time
+   * in `[anchorTime, otsTime]`.
+   */
+  otsTime?: number;
   /** True iff every per-attestation check passed. Invalid attestations are ignored for liveness. */
   valid: boolean;
 }
@@ -37,6 +56,11 @@ export interface EvaluateOptions {
   now: number;
   /** A prior version of the definition, to surface definition drift. */
   previousDefinition?: CanaryDefinition;
+  /**
+   * Maximum tolerated gap between an attestation's anchor block time and its OTS commit time before a
+   * `back-dated` alarm is raised. Defaults to {@link DEFAULT_MAX_OTS_STRADDLE}.
+   */
+  maxOtsStraddle?: number;
 }
 
 export interface Evaluation {
@@ -86,6 +110,8 @@ export function evaluate(
 
   // Clause-drop is surfaced regardless of liveness — including on a (possibly coerced) shutdown.
   alarms.push(...clauseDropAlarms(definition, valid));
+  // Back-dating likewise: it flags archive tampering, not a liveness change.
+  alarms.push(...backDatingAlarms(valid, opts.maxOtsStraddle ?? DEFAULT_MAX_OTS_STRADDLE));
 
   if (latest.status === 'retired' || latest.status === 'terminated') {
     return {
@@ -166,6 +192,42 @@ function clauseDropAlarms(definition: CanaryDefinition, validSortedAsc: Evaluate
           message: `signer ${signer} stopped affirming "${clause}"`,
         });
       }
+    }
+  }
+  return out;
+}
+
+/**
+ * Back-dating detection from the OpenTimestamps upper bound. The true signing time lies in
+ * `[anchorTime, otsTime]`; a genuine attestation anchors a recent block and is stamped right away, so
+ * that window spans only OTS confirmation latency (~hours). A window wider than `maxStraddle` means
+ * the anchor predates the chain commitment by far — the hallmark of a period back-filled long after
+ * the fact and passed off as old. An upper bound that precedes the lower bound (beyond timestamp
+ * slop) is cryptographically inconsistent and equally suspect.
+ *
+ * Reported regardless of liveness. A back-dated attestation necessarily carries an old anchor, so it
+ * can never sustain current liveness on its own; the value here is exposing that the archive is being
+ * rewritten — exactly the back-dating that OpenTimestamps exists to catch.
+ */
+function backDatingAlarms(valid: EvaluatedAttestation[], maxStraddle: number): Alarm[] {
+  const out: Alarm[] = [];
+  for (const a of valid) {
+    if (a.otsTime === undefined) continue; // OTS still pending — no upper bound to check yet
+    const straddle = a.otsTime - a.anchorTime;
+    if (straddle > maxStraddle) {
+      out.push({
+        kind: 'back-dated',
+        signer: a.signer,
+        eventId: a.eventId,
+        message: `anchor block is ${straddle}s older than the OpenTimestamps commit (> ${maxStraddle}s); the attestation was timestamped long after its anchor, indicating a back-filled period`,
+      });
+    } else if (straddle < -TIMESTAMP_SLOP) {
+      out.push({
+        kind: 'back-dated',
+        signer: a.signer,
+        eventId: a.eventId,
+        message: `OpenTimestamps commit precedes the anchor block by ${-straddle}s; the freshness bounds are inconsistent`,
+      });
     }
   }
   return out;

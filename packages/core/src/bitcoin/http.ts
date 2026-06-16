@@ -16,5 +16,8 @@ export type FetchLike = (url: string) => Promise<HttpResponse>;
 export function defaultFetch(): FetchLike {
   const f = (globalThis as { fetch?: FetchLike }).fetch;
   if (!f) throw new Error('global fetch is unavailable; pass a fetchFn explicitly');
-  return f;
+  // Call bound to the global object. A *detached* `fetch` reference (`const f = globalThis.fetch; f(x)`)
+  // throws "Illegal invocation" in browsers, where `fetch` must be invoked on `window`/`self`. Node has
+  // no such restriction — so returning the bare reference worked there but broke every browser consumer.
+  return (url) => f.call(globalThis, url);
 }

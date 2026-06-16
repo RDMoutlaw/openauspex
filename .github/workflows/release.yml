@@ -1,0 +1,28 @@
+name: Release
+
+# Publishes all public @openauspex/* packages to npm when a version tag is pushed.
+# Flow:  bump versions  →  commit  →  git tag vX.Y.Z  →  git push --tags  →  this runs.
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # required for npm provenance (verifiable build → source link)
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+      # Publishes every non-private workspace (core, publisher, monitor, cli); the private root is skipped.
+      - run: npm publish --workspaces --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
