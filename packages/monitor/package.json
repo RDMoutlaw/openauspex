@@ -1,6 +1,6 @@
 {
   "name": "@openauspex/monitor",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "type": "module",
   "description": "OpenAuspex watcher side: subscribe, validate against the chain, and raise DEAD / CLAUSE-DROP / DRIFT alarms.",
   "license": "MIT",
@@ -41,7 +41,7 @@
     "access": "public"
   },
   "dependencies": {
-    "@openauspex/core": "^0.2.0",
+    "@openauspex/core": "^0.3.0",
     "nostr-tools": "^2.7.0"
   }
 }

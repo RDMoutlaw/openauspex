@@ -1,6 +1,6 @@
 {
   "name": "@openauspex/core",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "type": "module",
   "description": "Core library for OpenAuspex: event modelling, validation, Bitcoin freshness, OpenTimestamps, and evaluation.",
   "license": "MIT",

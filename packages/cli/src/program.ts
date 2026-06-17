@@ -19,9 +19,11 @@ import { FileStore, Publisher, simplePoolPublisher } from '@openauspex/publisher
 import type { PublishResult } from '@openauspex/publisher';
 import { Monitor, fetchCanaryEvents, formatReport } from '@openauspex/monitor';
 import type { MonitorReport } from '@openauspex/monitor';
+import { ConsoleChannel, FileNotifyStore, WebhookChannel, decide, decideReminder, dispatch } from '@openauspex/notify';
+import type { NotificationChannel } from '@openauspex/notify';
 
 import { SAMPLE_CONFIG, loadConfig, resolveSecretKey } from './config.js';
-import type { CanaryConfig } from './config.js';
+import type { CanaryConfig, ChannelConfig } from './config.js';
 
 interface CommonOpts {
   config: string;
@@ -121,6 +123,24 @@ function buildMonitor(o: { config: string; pubkey?: string }): {
     verifyOts: verifyProof,
   });
   return { cfg, monitor, pool };
+}
+
+const DEFAULT_NOTIFY_STATE_PATH = '.openauspex/notify-state.json';
+
+/** Build delivery channels from config, plus an optional ad-hoc webhook from a CLI flag. */
+function buildChannels(channelCfgs: ChannelConfig[] | undefined, extraWebhook?: string): NotificationChannel[] {
+  const cfgs = channelCfgs && channelCfgs.length > 0 ? channelCfgs : [{ type: 'console' as const }];
+  const channels: NotificationChannel[] = [];
+  for (const c of cfgs) {
+    if (c.type === 'webhook') channels.push(new WebhookChannel({ url: c.url, headers: c.headers }));
+    else channels.push(new ConsoleChannel());
+  }
+  if (extraWebhook) channels.push(new WebhookChannel({ url: extraWebhook }));
+  return channels;
+}
+
+function notifyStatePath(o: { state?: string }, cfg: CanaryConfig): string {
+  return o.state ?? cfg.notifyStatePath ?? DEFAULT_NOTIFY_STATE_PATH;
 }
 
 export function buildProgram(): Command {
@@ -344,6 +364,99 @@ export function buildProgram(): Command {
         console.log(
           `  self-contained: ${selfContained ? 'yes' : 'no (pending-form — re-run `upgrade` after 6 confirmations for a standalone proof)'}`,
         );
+      } finally {
+        pool.close(cfg.relays);
+      }
+    });
+
+  program
+    .command('notify')
+    .description('Check a canary and alert on state changes + alarms (de-duplicated; cron-friendly)')
+    .option('-c, --config <path>', 'config file path', 'canary.config.json')
+    .option('--pubkey <hex>', 'definition author pubkey (overrides config)')
+    .option('--webhook <url>', 'also POST notifications to this webhook URL')
+    .option('--state <path>', 'notifier state file (default .openauspex/notify-state.json)')
+    .option('--interval <seconds>', 'poll continuously every N seconds instead of once')
+    .action(async (o: { config: string; pubkey?: string; webhook?: string; state?: string; interval?: string }) => {
+      const { cfg, monitor, pool } = buildMonitor(o);
+      const store = new FileNotifyStore(notifyStatePath(o, cfg));
+      const channels = buildChannels(cfg.alerts?.channels, o.webhook);
+
+      const runOnce = async (): Promise<void> => {
+        const report = await monitor.check();
+        const now = Math.floor(Date.now() / 1000);
+        const { notifications, state } = decide(report, store.get(cfg.canaryId), {
+          now,
+          confirmations: cfg.alerts?.confirmations,
+          notifyOnRecovery: cfg.alerts?.notifyOnRecovery,
+        });
+        store.set(cfg.canaryId, state);
+        if (notifications.length === 0) {
+          console.log(`${cfg.canaryId}: ${report.evaluation.state} — no new notifications`);
+        } else {
+          await dispatch(notifications, channels);
+        }
+      };
+
+      if (o.interval) {
+        let stopped = false;
+        const tick = async (): Promise<void> => {
+          if (stopped) return;
+          try {
+            await runOnce();
+          } catch (e) {
+            console.error((e as Error).message);
+          }
+        };
+        await tick();
+        const timer = setInterval(() => void tick(), Number(o.interval) * 1000);
+        process.on('SIGINT', () => {
+          stopped = true;
+          clearInterval(timer);
+          pool.close(cfg.relays);
+          process.exit(0);
+        });
+      } else {
+        try {
+          await runOnce();
+        } finally {
+          pool.close(cfg.relays);
+        }
+      }
+    });
+
+  program
+    .command('remind')
+    .description('Remind the operator to re-attest before the canary lapses (cron-friendly)')
+    .option('-c, --config <path>', 'config file path', 'canary.config.json')
+    .option('--pubkey <hex>', 'definition author pubkey (overrides config)')
+    .option('--lead <seconds>', 'override reminder lead time(s); comma-separated for multiple')
+    .option('--webhook <url>', 'also POST the reminder to this webhook URL')
+    .option('--state <path>', 'notifier state file (default .openauspex/notify-state.json)')
+    .action(async (o: { config: string; pubkey?: string; lead?: string; webhook?: string; state?: string }) => {
+      const { cfg, monitor, pool } = buildMonitor(o);
+      try {
+        const store = new FileNotifyStore(notifyStatePath(o, cfg));
+        const channels = buildChannels(cfg.reminders?.channels, o.webhook);
+        const report = await monitor.check();
+        const now = Math.floor(Date.now() / 1000);
+        const leadTimes = o.lead
+          ? splitIds(o.lead)
+              .map(Number)
+              .filter((n) => Number.isFinite(n) && n > 0)
+          : cfg.reminders?.leadTimes;
+        const { notifications, state } = decideReminder(report, store.get(cfg.canaryId), { now, leadTimes });
+        store.set(cfg.canaryId, state);
+        if (notifications.length === 0) {
+          const dl = report.evaluation.deadline;
+          console.log(
+            dl !== undefined
+              ? `${cfg.canaryId}: next deadline ${new Date(dl * 1000).toISOString()} — nothing due`
+              : `${cfg.canaryId}: no attestation deadline (state ${report.evaluation.state})`,
+          );
+        } else {
+          await dispatch(notifications, channels);
+        }
       } finally {
         pool.close(cfg.relays);
       }

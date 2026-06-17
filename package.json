@@ -1,6 +1,6 @@
 {
   "name": "openauspex",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "type": "module",
   "description": "A warrant canary system for Nostr, with Bitcoin block-hash anchoring and OpenTimestamps for freshness.",
@@ -9,11 +9,11 @@
     "packages/*"
   ],
   "scripts": {
-    "build": "tsc -p packages/core/tsconfig.build.json && tsc -p packages/publisher/tsconfig.build.json && tsc -p packages/monitor/tsconfig.build.json && tsc -p packages/cli/tsconfig.build.json",
+    "build": "tsc -p packages/core/tsconfig.build.json && tsc -p packages/publisher/tsconfig.build.json && tsc -p packages/monitor/tsconfig.build.json && tsc -p packages/notify/tsconfig.build.json && tsc -p packages/cli/tsconfig.build.json",
     "clean": "rm -rf packages/*/dist",
     "test": "vitest run",
     "test:watch": "vitest",
-    "typecheck": "tsc -p packages/core/tsconfig.json && tsc -p packages/publisher/tsconfig.json && tsc -p packages/monitor/tsconfig.json && tsc -p packages/cli/tsconfig.json",
+    "typecheck": "tsc -p packages/core/tsconfig.json && tsc -p packages/publisher/tsconfig.json && tsc -p packages/monitor/tsconfig.json && tsc -p packages/notify/tsconfig.json && tsc -p packages/cli/tsconfig.json",
     "cli": "NODE_OPTIONS=--conditions=development tsx packages/cli/src/index.ts",
     "vectors:generate": "NODE_OPTIONS=--conditions=development tsx scripts/generate-vectors.ts"
   },

@@ -22,5 +22,14 @@
       { "id": "no-backdoor", "text": "We have not installed any backdoor or weakened encryption at government request." },
       { "id": "keys-undisclosed", "text": "We have not disclosed private keys or auth material to any third party." }
     ]
+  },
+  "alerts": {
+    "confirmations": 2,
+    "notifyOnRecovery": true,
+    "channels": [{ "type": "console" }]
+  },
+  "reminders": {
+    "leadTimes": [259200, 86400, 3600],
+    "channels": [{ "type": "console" }]
   }
 }

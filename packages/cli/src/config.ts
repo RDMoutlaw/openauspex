@@ -13,6 +13,29 @@ export interface DefinitionConfig {
   threshold?: number;
 }
 
+/** A notification delivery target. */
+export type ChannelConfig =
+  | { type: 'console' }
+  | { type: 'webhook'; url: string; headers?: Record<string, string> };
+
+/** `notify`-command behaviour (watcher-facing alerts). */
+export interface AlertsConfig {
+  /** Consecutive checks a new state must persist before alerting — a debounce. Default 1. */
+  confirmations?: number;
+  /** Notify when the canary recovers to `alive`. Default true. */
+  notifyOnRecovery?: boolean;
+  /** Where alerts are delivered. Default a single console channel. */
+  channels?: ChannelConfig[];
+}
+
+/** `remind`-command behaviour (operator-facing re-attestation nudges). */
+export interface RemindersConfig {
+  /** Lead windows (seconds before the deadline) at which to remind, e.g. `[259200, 86400, 3600]`. */
+  leadTimes?: number[];
+  /** Where reminders are delivered. Default a single console channel. */
+  channels?: ChannelConfig[];
+}
+
 export interface CanaryConfig {
   relays: string[];
   canaryId: string;
@@ -20,6 +43,10 @@ export interface CanaryConfig {
   explorers: string[];
   storePath: string;
   definition?: DefinitionConfig;
+  /** Where the notifier persists de-dup state. Default `.openauspex/notify-state.json`. */
+  notifyStatePath?: string;
+  alerts?: AlertsConfig;
+  reminders?: RemindersConfig;
 }
 
 const DEFAULT_EXPLORERS = ['https://mempool.space/api', 'https://blockstream.info/api'];
@@ -36,6 +63,9 @@ export function loadConfig(path: string): CanaryConfig {
     explorers: bitcoin.explorers ?? DEFAULT_EXPLORERS,
     storePath: (raw.storePath as string | undefined) ?? '.openauspex/pending.json',
     definition: raw.definition as DefinitionConfig | undefined,
+    notifyStatePath: raw.notifyStatePath as string | undefined,
+    alerts: raw.alerts as AlertsConfig | undefined,
+    reminders: raw.reminders as RemindersConfig | undefined,
   };
 }
 
@@ -70,5 +100,14 @@ export const SAMPLE_CONFIG = {
       { id: 'no-backdoor', text: 'We have not installed any backdoor or weakened encryption at government request.' },
       { id: 'keys-undisclosed', text: 'We have not disclosed private keys or auth material to any third party.' },
     ],
+  },
+  alerts: {
+    confirmations: 2,
+    notifyOnRecovery: true,
+    channels: [{ type: 'console' }],
+  },
+  reminders: {
+    leadTimes: [259200, 86400, 3600],
+    channels: [{ type: 'console' }],
   },
 };

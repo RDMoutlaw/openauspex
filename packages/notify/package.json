@@ -1,20 +1,20 @@
 {
-  "name": "@openauspex/cli",
+  "name": "@openauspex/notify",
   "version": "0.3.0",
   "type": "module",
-  "description": "OpenAuspex command-line interface.",
+  "description": "OpenAuspex notifications: turn monitor reports into de-duplicated alerts (state changes, alarms) and operator re-attestation reminders, delivered over pluggable channels.",
   "license": "MIT",
   "keywords": [
     "nostr",
     "warrant-canary",
     "bitcoin",
     "opentimestamps",
-    "cli"
+    "notifications"
   ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/RDMoutlaw/openauspex.git",
-    "directory": "packages/cli"
+    "directory": "packages/notify"
   },
   "homepage": "https://github.com/RDMoutlaw/openauspex#readme",
   "bugs": "https://github.com/RDMoutlaw/openauspex/issues",
@@ -22,11 +22,17 @@
     "node": ">=20"
   },
   "main": "./dist/index.js",
-  "bin": {
-    "auspex": "./dist/index.js"
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "development": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
   },
   "files": [
-    "dist"
+    "dist",
+    "src"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json"
@@ -36,11 +42,6 @@
   },
   "dependencies": {
     "@openauspex/core": "^0.3.0",
-    "@openauspex/monitor": "^0.3.0",
-    "@openauspex/notify": "^0.3.0",
-    "@openauspex/publisher": "^0.3.0",
-    "commander": "^12.1.0",
-    "nostr-tools": "^2.7.0",
-    "ws": "^8.21.0"
+    "@openauspex/monitor": "^0.3.0"
   }
 }

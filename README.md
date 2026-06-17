@@ -18,8 +18,8 @@ coerced signing, into the need for *continuous* live access — but it does not,
 adversary who retains the key or who compels the operator to keep signing truthfully under duress (see
 [SECURITY.md](./SECURITY.md)). Freshness proves recency of signing, not that the signer was free.
 
-It ships a TypeScript library and an `auspex` CLI to **publish**, **archive**, and **monitor**
-canaries.
+It ships a TypeScript library and an `auspex` CLI to **publish**, **archive**, **monitor**, and
+**alert on** canaries.
 
 ## How it works
 
@@ -103,7 +103,8 @@ they live in a single constant (`KINDS`) and can be changed in one place.
 | `@openauspex/core` | Event modelling & validation, Bitcoin freshness, OpenTimestamps, and the pure evaluation engine. |
 | `@openauspex/publisher` | Operator side: anchor → sign → publish, plus the OpenTimestamps upgrade lifecycle. |
 | `@openauspex/monitor` | Watcher side: fetch, validate against the chain, and raise DEAD / CLAUSE-DROP / DRIFT alarms. |
-| `@openauspex/cli` | The `auspex` command, wrapping the publisher and monitor. |
+| `@openauspex/notify` | Turns monitor reports into de-duplicated alerts (state changes, alarms) and operator re-attestation reminders, over pluggable channels. |
+| `@openauspex/cli` | The `auspex` command, wrapping the publisher, monitor, and notifier. |
 
 The `core` evaluation engine performs no I/O, so the security-critical logic is unit-tested offline.
 
@@ -142,11 +143,87 @@ npm run cli -- upgrade
 npm run cli -- check   --pubkey <author-hex>
 npm run cli -- watch   --pubkey <author-hex> --interval 300
 npm run cli -- inspect --pubkey <author-hex>     # raw events + njump links (add --json)
+
+# alerting (watchers) and re-sign reminders (operators) — single-shot and cron-friendly
+npm run cli -- notify  --pubkey <author-hex>     # alert on state changes + new alarms
+npm run cli -- remind                            # nudge yourself before your own deadline
 ```
 
 The configuration is a single JSON file — see [`canary.config.example.json`](./canary.config.example.json).
 For a multi-signer canary, add `signers` (authorized pubkeys) and a `threshold` to the `definition`; set
 a top-level `definitionPubkey` to monitor a canary you didn't author.
+
+## Notifications & scheduling
+
+Two commands turn a canary's evaluated state into action. Both run once and exit (so they drop
+straight into cron or a systemd timer), and both de-duplicate against a small JSON state file
+(`.openauspex/notify-state.json` by default) so a scheduled run only ever surfaces what *changed*
+since the last one:
+
+- **`notify`** (watchers) — alerts when the canary's state changes (`alive` → `dead`, retired,
+  terminated, …) and once for each new alarm (clause-drop, definition-drift, back-dated). The
+  `confirmations` setting debounces transient relay/explorer blips: a new state must persist across
+  that many consecutive checks before it alerts.
+- **`remind`** (operators) — nudges you to re-attest as your own deadline approaches, once per lead
+  threshold and escalating to an *overdue* alert once it passes. This guards against the worst false
+  positive: forgetting to re-sign and tripping your own canary.
+
+Delivery is over pluggable **channels** — `console` (the default) and `webhook` (a JSON POST you can
+point at [ntfy](https://ntfy.sh), a Discord/Slack relay, or your own endpoint). Configure each command
+independently in the config file:
+
+```json
+{
+  "alerts": {
+    "confirmations": 2,
+    "notifyOnRecovery": true,
+    "channels": [{ "type": "console" }, { "type": "webhook", "url": "https://ntfy.sh/my-canary" }]
+  },
+  "reminders": {
+    "leadTimes": [259200, 86400, 3600],
+    "channels": [{ "type": "console" }]
+  }
+}
+```
+
+`leadTimes` are seconds before the deadline (here 3 days, 1 day, 1 hour). CLI flags override the
+config: `--webhook <url>` appends a target, `--state <path>` relocates the state file, `--lead <s,s,…>`
+overrides the reminder windows, and `notify --interval <seconds>` polls continuously instead of
+exiting (a foreground alternative to cron).
+
+### Scheduling
+
+Watchers run `notify`; operators run `remind`. With a global install (`npm i -g @openauspex/cli`,
+which puts `auspex` on `PATH`) and cron:
+
+```cron
+# watcher: check a canary you follow every 15 minutes (no key needed)
+*/15 * * * * cd /srv/canary && auspex notify --pubkey <author-hex> >> notify.log 2>&1
+
+# operator: remind yourself to re-sign, checked twice a day (CANARY_NSEC derives your own pubkey)
+0 9,21 * * * cd /srv/canary && CANARY_NSEC=nsec1… auspex remind >> remind.log 2>&1
+```
+
+or as a systemd timer (`auspex-notify.service` + `auspex-notify.timer`):
+
+```ini
+# auspex-notify.service — Type=oneshot, paired with the timer below
+[Service]
+Type=oneshot
+WorkingDirectory=/srv/canary
+ExecStart=/usr/local/bin/auspex notify --pubkey <author-hex>
+
+# auspex-notify.timer
+[Timer]
+OnCalendar=*:0/15
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+```
+
+Point a watcher and its scheduler at the same working directory so they share one config and state
+file.
 
 ## Using the library
 

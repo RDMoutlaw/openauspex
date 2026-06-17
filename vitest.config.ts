@@ -17,6 +17,7 @@ export default defineConfig({
       '@openauspex/core': src('core'),
       '@openauspex/publisher': src('publisher'),
       '@openauspex/monitor': src('monitor'),
+      '@openauspex/notify': src('notify'),
     },
   },
 });
